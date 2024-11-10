@@ -1,7 +1,19 @@
 # TypeNote - A Modern Note-Taking Application
 
+## Getting Started
+
+### Prerequisites
+- Node.js (v18.x)
+- npm (latest version)
+
+### Installation
+
+1. Clone the repository:
+
 ## Project Structure
+```
 /typenote
+```
 ├── client/                 # Frontend
 │   ├── src/
 │   │   ├── components/    # React components
