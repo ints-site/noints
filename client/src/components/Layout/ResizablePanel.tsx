@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Resizable } from 'react-resizable';
+import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
 
 interface ResizablePanelProps {
@@ -19,29 +19,31 @@ const ResizablePanel: React.FC<ResizablePanelProps> = ({
 }) => {
   const [width, setWidth] = useState(initialWidth);
 
-  const onResize = (e: React.SyntheticEvent, { size }: { size: { width: number; height: number } }) => {
-    if (size.width >= minWidth && size.width <= maxWidth) {
-      setWidth(size.width);
+  const onResize = (_: React.SyntheticEvent, data: ResizeCallbackData) => {
+    const newWidth = data.size.width;
+    if (newWidth >= minWidth && newWidth <= maxWidth) {
+      setWidth(newWidth);
     }
   };
 
   return (
-    <Resizable
+    <ResizableBox
       width={width}
-      height={Infinity}
+      height={window.innerHeight}
       onResize={onResize}
       draggableOpts={{ enableUserSelectHack: false }}
       handle={
         <div className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 z-10" />
       }
       axis="x"
-      minConstraints={[minWidth, Infinity]}
-      maxConstraints={[maxWidth, Infinity]}
+      minConstraints={[minWidth, 100]}
+      maxConstraints={[maxWidth, window.innerHeight]}
+      resizeHandles={['e']}
     >
-      <div style={{ width }} className={`relative ${className}`}>
+      <div className={`relative ${className}`} style={{ width, height: '100%' }}>
         {children}
       </div>
-    </Resizable>
+    </ResizableBox>
   );
 };
 

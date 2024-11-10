@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { Descendant } from 'slate';
 import { Notebook, Section, Note } from '../types';
 
 interface NotebookState {
@@ -37,7 +38,106 @@ const notebookSlice = createSlice({
     },
     setCurrentNote: (state, action: PayloadAction<Note>) => {
       state.currentNote = action.payload;
-    }
+    },
+    updateNoteContent: (
+      state,
+      action: PayloadAction<{ id: string; content: Descendant[] }>
+    ) => {
+      const { id, content } = action.payload;
+      state.items.forEach(notebook => {
+        notebook.sections.forEach(section => {
+          const note = section.notes.find(n => n.id === id);
+          if (note) {
+            note.content = content;
+            note.updatedAt = new Date();
+          }
+        });
+      });
+    },
+    addSection: (state, action: PayloadAction<{ notebookId: string; section: Section }>) => {
+      const { notebookId, section } = action.payload;
+      const notebook = state.items.find(nb => nb.id === notebookId);
+      if (notebook) {
+        notebook.sections.push(section);
+      }
+    },
+    addNote: (state, action: PayloadAction<{ sectionId: string; note: Note }>) => {
+      const { sectionId, note } = action.payload;
+      state.items.forEach(notebook => {
+        const section = notebook.sections.find(s => s.id === sectionId);
+        if (section) {
+          section.notes.push(note);
+        }
+      });
+    },
+    updateSectionTitle: (state, action: PayloadAction<{ sectionId: string; title: string }>) => {
+      const { sectionId, title } = action.payload;
+      state.items.forEach(notebook => {
+        const section = notebook.sections.find(s => s.id === sectionId);
+        if (section) {
+          section.title = title;
+        }
+      });
+    },
+    updateNoteTitle: (state, action: PayloadAction<{ noteId: string; title: string }>) => {
+      const { noteId, title } = action.payload;
+      state.items.forEach(notebook => {
+        notebook.sections.forEach(section => {
+          const note = section.notes.find(n => n.id === noteId);
+          if (note) {
+            note.title = title;
+          }
+        });
+      });
+    },
+    deleteSection: (state, action: PayloadAction<{ notebookId: string; sectionId: string }>) => {
+      const { notebookId, sectionId } = action.payload;
+      const notebook = state.items.find(nb => nb.id === notebookId);
+      if (notebook) {
+        notebook.sections = notebook.sections.filter(s => s.id !== sectionId);
+      }
+      if (state.currentSection?.id === sectionId) {
+        state.currentSection = null;
+        state.currentNote = null;
+      }
+    },
+    deleteNote: (state, action: PayloadAction<{ noteId: string }>) => {
+      const { noteId } = action.payload;
+      state.items.forEach(notebook => {
+        notebook.sections.forEach(section => {
+          section.notes = section.notes.filter(n => n.id !== noteId);
+        });
+      });
+      if (state.currentNote?.id === noteId) {
+        state.currentNote = null;
+      }
+    },
+    reorderSections: (state, action: PayloadAction<{
+      notebookId: string;
+      startIndex: number;
+      endIndex: number;
+    }>) => {
+      const { notebookId, startIndex, endIndex } = action.payload;
+      const notebook = state.items.find(nb => nb.id === notebookId);
+      if (notebook) {
+        const [removed] = notebook.sections.splice(startIndex, 1);
+        notebook.sections.splice(endIndex, 0, removed);
+      }
+    },
+    reorderNotes: (state, action: PayloadAction<{
+      sectionId: string;
+      startIndex: number;
+      endIndex: number;
+    }>) => {
+      const { sectionId, startIndex, endIndex } = action.payload;
+      state.items.forEach(notebook => {
+        const section = notebook.sections.find(s => s.id === sectionId);
+        if (section) {
+          const [removed] = section.notes.splice(startIndex, 1);
+          section.notes.splice(endIndex, 0, removed);
+        }
+      });
+    },
   }
 });
 
@@ -46,7 +146,16 @@ export const {
   addNotebook,
   setCurrentNotebook,
   setCurrentSection,
-  setCurrentNote
+  setCurrentNote,
+  updateNoteContent,
+  addSection,
+  addNote,
+  updateSectionTitle,
+  updateNoteTitle,
+  deleteSection,
+  deleteNote,
+  reorderSections,
+  reorderNotes
 } = notebookSlice.actions;
 
 export default notebookSlice.reducer; 
