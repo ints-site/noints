@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
-@tailwind utilities; 
+@tailwind utilities;
+
+/* 添加拖动条的样式 */
+.react-resizable-handle {
+  position: absolute;
+  right: -5px;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: col-resize;
+  background: transparent;
+}
+
+.react-resizable-handle:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* 防止拖动时选中文本 */
+.react-resizable {
+  user-select: none;
+} 
