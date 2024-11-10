@@ -11,23 +11,24 @@
 1. Clone the repository:
 
 ## Project Structure
+
 ```
-/typenote
-```
+typenote/
 ├── client/                 # Frontend
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── styles/       # CSS/SCSS files
-│   │   ├── hooks/        # Custom React hooks
-│   │   ├── store/        # State management
-│   │   └── utils/        # Utility functions
+│   └── src/
+│       ├── components/     # React components
+│       ├── styles/        # CSS/SCSS files
+│       ├── hooks/         # Custom React hooks
+│       ├── store/         # State management
+│       └── utils/         # Utility functions
 ├── server/                # Backend
-│   ├── src/
-│   │   ├── controllers/  # Route controllers
-│   │   ├── models/       # Data models
-│   │   ├── routes/       # API routes
-│   │   └── utils/        # Utility functions
-└── shared/               # Shared types/interfaces
+│   └── src/
+│       ├── controllers/   # Route controllers
+│       ├── models/        # Data models
+│       ├── routes/        # API routes
+│       └── utils/         # Utility functions
+└── shared/                # Shared types/interfaces
+```
 
 ## Features
 1. Notebook Organization
