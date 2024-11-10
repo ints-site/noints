@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Notebook } from '../../types';
+import { Notebook } from '@shared/types';
 import { addNotebook } from '../../store/notebookSlice';
 
 interface RootState {

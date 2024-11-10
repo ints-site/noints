@@ -17,7 +17,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Section, Note } from '../../types';
+import { Section, Note } from '@shared/types';
 import {
   addSection,
   addNote,

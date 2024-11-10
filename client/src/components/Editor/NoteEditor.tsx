@@ -70,7 +70,17 @@ const NoteEditor: React.FC<EditorProps> = ({ noteId }) => {
       .map(n => SlateNode.string(n))
       .join('\n')
       .trim();
-    return text.split(/\s+/).filter(Boolean).length;
+    
+    // 检查是否包含CJK字符
+    const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf]/.test(text);
+    
+    if (hasCJK) {
+      // 如果包含CJK字符，直接计算字符数（排除空格和换行符）
+      return text.replace(/\s+/g, '').length;
+    } else {
+      // 如果是纯英文，按空格分词
+      return text.split(/\s+/).filter(Boolean).length;
+    }
   }, []);
 
   // 导出功能

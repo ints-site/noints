@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Descendant } from 'slate';
-import { Notebook, Section, Note } from '../types';
+import { Notebook, Section, Note } from '@shared/types';
 
 interface NotebookState {
   items: Notebook[];
@@ -45,8 +45,8 @@ const notebookSlice = createSlice({
     ) => {
       const { id, content } = action.payload;
       state.items.forEach(notebook => {
-        notebook.sections.forEach(section => {
-          const note = section.notes.find(n => n.id === id);
+        notebook.sections.forEach((section: Section) => {
+          const note = section.notes.find((n: Note) => n.id === id);
           if (note) {
             note.content = content;
             note.updatedAt = new Date();
@@ -82,8 +82,8 @@ const notebookSlice = createSlice({
     updateNoteTitle: (state, action: PayloadAction<{ noteId: string; title: string }>) => {
       const { noteId, title } = action.payload;
       state.items.forEach(notebook => {
-        notebook.sections.forEach(section => {
-          const note = section.notes.find(n => n.id === noteId);
+        notebook.sections.forEach((section: Section) => {
+          const note = section.notes.find((n: Note) => n.id === noteId);
           if (note) {
             note.title = title;
           }
@@ -104,7 +104,7 @@ const notebookSlice = createSlice({
     deleteNote: (state, action: PayloadAction<{ noteId: string }>) => {
       const { noteId } = action.payload;
       state.items.forEach(notebook => {
-        notebook.sections.forEach(section => {
+        notebook.sections.forEach((section: Section) => {
           section.notes = section.notes.filter(n => n.id !== noteId);
         });
       });
