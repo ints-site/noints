@@ -1,3 +1,6 @@
+之后每次代码提交push到beta分支，然后从beta分支，之后完善版本后再提交到main
+
+
 # TypeNote - A Modern Note-Taking Application
 
 ## Getting Started
@@ -57,4 +60,4 @@ typenote/
    - Full-text search
    - Filter by tags
 
-
+之后每次代码提交push到beta分支，然后从beta分支，之后完善版本后再提交到main

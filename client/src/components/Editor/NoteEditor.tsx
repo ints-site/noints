@@ -1,5 +1,12 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { createEditor, Descendant, Editor, Node as SlateNode } from 'slate';
+import { 
+  createEditor, 
+  Descendant, 
+  Editor, 
+  Element as SlateElement,
+  Node as SlateNode,
+  Transforms
+} from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { useAutoSave } from '../../hooks/useAutoSave';
@@ -8,15 +15,16 @@ import { CustomElement, CustomText } from './types';
 
 interface EditorProps {
   noteId?: string;
+  onThemeChange?: (isDark: boolean) => void;
 }
 
-const NoteEditor: React.FC<EditorProps> = ({ noteId }) => {
+const NoteEditor: React.FC<EditorProps> = ({ noteId, onThemeChange }) => {
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
   const [value, setValue] = useState<Descendant[]>([
     {
       type: 'paragraph',
-      children: [{ text: '' }],
-    },
+      children: [{ text: '' }]
+    }
   ]);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [wordCount, setWordCount] = useState(0);
@@ -61,43 +69,56 @@ const NoteEditor: React.FC<EditorProps> = ({ noteId }) => {
       children = <u>{children}</u>;
     }
     
-    return <span {...props.attributes}>{children}</span>;
+    // 添加背景色样式
+    const style: React.CSSProperties = {};
+    if (props.leaf.backgroundColor) {
+      style.backgroundColor = props.leaf.backgroundColor;
+    }
+    
+    return (
+      <span {...props.attributes} style={style}>
+        {children}
+      </span>
+    );
   }, []);
 
-  // 计算字数
+  // 修改计算字数的函数
   const calculateWordCount = useCallback((value: Descendant[]) => {
     const text = value
       .map(n => SlateNode.string(n))
       .join('\n')
       .trim();
     
-    // 检查是否包含CJK字符
-    const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf]/.test(text);
+    if (!text) return 0;
     
-    if (hasCJK) {
-      // 如果包含CJK字符，直接计算字符数（排除空格和换行符）
-      return text.replace(/\s+/g, '').length;
-    } else {
-      // 如果是纯英文，按空格分词
-      return text.split(/\s+/).filter(Boolean).length;
-    }
+    // 分别计算中文和英文字数
+    const cjkCount = (text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g) || []).length;
+    const englishWords = text
+      .replace(/[\u4e00-\u9fff\u3400-\u4dbf]/g, '') // 移除中文字符
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean).length;
+    
+    // 中文字符算一个字，英文单词算一个字
+    return cjkCount + englishWords;
   }, []);
 
-  // 导出功能
-  const handleExport = useCallback((format: 'txt' | 'md' | 'html') => {
+  // 修改导出函数，使filename参数可选
+  const handleExport = useCallback((format: 'txt' | 'md' | 'html', filename?: string) => {
     const text = value.map(n => SlateNode.string(n)).join('\n');
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `note.${format}`;
+    // 如果没有提供文件名，使用默认文件名
+    a.download = filename || `note.${format}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [value]);
 
-  // 处理快捷键
+  // 理快捷键
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     if (!event.ctrlKey) return;
 
@@ -134,18 +155,27 @@ const NoteEditor: React.FC<EditorProps> = ({ noteId }) => {
     }
   }, [editor]);
 
+  // 添加主题切换处理
+  const handleThemeChange = useCallback((isDark: boolean) => {
+    onThemeChange?.(isDark);
+  }, [onThemeChange]);
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col dark:bg-gray-700 dark:text-gray-100">
       <Slate
         editor={editor}
         value={value}
         onChange={newValue => {
           setValue(newValue);
-          setWordCount(calculateWordCount(newValue));
+          const count = calculateWordCount(newValue);
+          setWordCount(count);
         }}
       >
-        <div className="border-b flex items-center justify-between px-4 py-2">
-          <Toolbar onExport={handleExport} />
+        <div className="border-b flex items-center justify-between px-4 py-2 dark:border-gray-600">
+          <Toolbar 
+            onExport={handleExport} 
+            onThemeChange={handleThemeChange}
+          />
           <div className="flex items-center gap-4">
             {/* 保存状态指示器 */}
             <div className="text-sm text-gray-500 flex items-center gap-1">
@@ -170,13 +200,13 @@ const NoteEditor: React.FC<EditorProps> = ({ noteId }) => {
             </div>
             {/* 字数统计 */}
             <div className="text-sm text-gray-500">
-              {wordCount} {wordCount === 1 ? 'word' : 'words'}
+              {wordCount} {wordCount === 1 ? 'character' : 'characters'}
             </div>
           </div>
         </div>
-        <div className="flex-1 p-6 overflow-auto">
+        <div className="flex-1 p-6 overflow-auto editor-content dark:bg-gray-700">
           <Editable
-            className="h-full outline-none prose max-w-none"
+            className="h-full outline-none prose max-w-none dark:prose-invert"
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             placeholder="Start typing..."
