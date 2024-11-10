@@ -2,7 +2,7 @@ import { BaseEditor, Descendant } from 'slate';
 import { ReactEditor } from 'slate-react';
 import { HistoryEditor } from 'slate-history';
 
-export type BlockFormatType = 'numbered-list' | 'bulleted-list' | 'paragraph';
+export type BlockFormatType = 'numbered-list' | 'bulleted-list' | 'paragraph' | 'list-item';
 export type MarkFormatType = 'bold' | 'italic' | 'underline' | 'backgroundColor';
 export type FormatType = BlockFormatType | MarkFormatType;
 
@@ -20,6 +20,8 @@ export type CustomText = {
 };
 
 export type CustomEditor = BaseEditor & ReactEditor & HistoryEditor;
+
+export type MarkFormat = 'bold' | 'italic' | 'underline';
 
 declare module 'slate' {
   interface CustomTypes {

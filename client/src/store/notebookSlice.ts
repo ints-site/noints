@@ -27,8 +27,24 @@ const notebookSlice = createSlice({
     setNotebooks: (state, action: PayloadAction<Notebook[]>) => {
       state.items = action.payload;
     },
-    addNotebook: (state, action: PayloadAction<Notebook>) => {
-      state.items.push(action.payload);
+    addNotebook: {
+      reducer: (state, action: PayloadAction<Notebook>) => {
+        if (!action.payload.id) {
+          state.error = 'Invalid notebook: missing ID';
+          return;
+        }
+        state.items.push(action.payload);
+      },
+      prepare: (notebook: Partial<Notebook>) => {
+        const newNotebook: Notebook = {
+          id: notebook.id || `notebook-${Date.now()}`,
+          title: notebook.title || 'Untitled Notebook',
+          sections: notebook.sections || [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        return { payload: newNotebook };
+      }
     },
     setCurrentNotebook: (state, action: PayloadAction<Notebook>) => {
       state.currentNotebook = action.payload;

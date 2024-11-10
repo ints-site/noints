@@ -7,216 +7,140 @@ import {
   Node as SlateNode,
   Transforms
 } from 'slate';
-import { Slate, Editable, withReact } from 'slate-react';
+import { Slate, Editable, withReact, RenderLeafProps } from 'slate-react';
 import { withHistory } from 'slate-history';
+import { useSelector } from 'react-redux';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import Toolbar from './Toolbar';
-import { CustomElement, CustomText } from './types';
+import { CustomElement, CustomText, BlockFormatType } from './types';
+import { RootState } from '../../store';
 
 interface EditorProps {
-  noteId?: string;
   onThemeChange?: (isDark: boolean) => void;
 }
 
-const NoteEditor: React.FC<EditorProps> = ({ noteId, onThemeChange }) => {
+const NoteEditor: React.FC<EditorProps> = ({ onThemeChange }) => {
+  // 获取当前笔记
+  const currentNote = useSelector((state: RootState) => state.notebooks.currentNote);
+
+  // 使用 useMemo 优化编辑器创建
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
-  const [value, setValue] = useState<Descendant[]>([
-    {
-      type: 'paragraph',
-      children: [{ text: '' }]
-    }
+  
+  // 初始化编辑器内容
+  const [value, setValue] = useState<CustomElement[]>([
+    { type: 'paragraph', children: [{ text: '' }] },
   ]);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
-  const [wordCount, setWordCount] = useState(0);
 
-  // 使用自动保存 hook
-  useAutoSave(noteId || null, value, 2000, () => {
-    setSaveStatus('saving');
-    setTimeout(() => setSaveStatus('saved'), 1000);
-  });
+  // 切换块类型
+  const toggleBlock = (format: BlockFormatType) => {
+    const isActive = isBlockActive(format);
+    const isList = ['numbered-list', 'bulleted-list'].includes(format);
 
-  // 渲染元素
-  const renderElement = useCallback((props: {
-    element: CustomElement;
-    children: React.ReactNode;
-    attributes: any;
-  }) => {
+    Transforms.unwrapNodes(editor, {
+      match: n => 
+        SlateElement.isElement(n) && 
+        ['numbered-list', 'bulleted-list'].includes(n.type),
+      split: true,
+    });
+
+    const newProperties: Partial<SlateElement> = {
+      type: isActive ? 'paragraph' : isList ? 'list-item' : format,
+    };
+
+    Transforms.setNodes<SlateElement>(editor, newProperties);
+
+    if (!isActive && isList) {
+      const block = { type: format, children: [] };
+      Transforms.wrapNodes(editor, block);
+    }
+  };
+
+  // 检查块类型是否激活
+  const isBlockActive = (format: BlockFormatType) => {
+    const [match] = Array.from(
+      Editor.nodes(editor, {
+        match: n =>
+          SlateElement.isElement(n) && n.type === format,
+      })
+    );
+    return !!match;
+  };
+
+  // 渲染元素和叶子节点的回调函数
+  const renderElement = useCallback((props: any) => {
     switch (props.element.type) {
+      case 'paragraph':
+        return <p {...props.attributes}>{props.children}</p>;
       case 'bulleted-list':
         return <ul {...props.attributes}>{props.children}</ul>;
       case 'numbered-list':
         return <ol {...props.attributes}>{props.children}</ol>;
+      case 'list-item':
+        return <li {...props.attributes}>{props.children}</li>;
       default:
         return <p {...props.attributes}>{props.children}</p>;
     }
   }, []);
 
-  // 渲染叶子节点
-  const renderLeaf = useCallback((props: {
-    leaf: CustomText;
-    children: React.ReactNode;
-    attributes: any;
-  }) => {
-    let { children } = props;
-    
-    if (props.leaf.bold) {
-      children = <strong>{children}</strong>;
-    }
-    if (props.leaf.italic) {
-      children = <em>{children}</em>;
-    }
-    if (props.leaf.underline) {
-      children = <u>{children}</u>;
-    }
-    
-    // 添加背景色样式
-    const style: React.CSSProperties = {};
-    if (props.leaf.backgroundColor) {
-      style.backgroundColor = props.leaf.backgroundColor;
-    }
-    
+  const renderLeaf = useCallback((props: RenderLeafProps) => {
+    let style: React.CSSProperties = {};
+    if (props.leaf.bold) style.fontWeight = 'bold';
+    if (props.leaf.italic) style.fontStyle = 'italic';
+    if (props.leaf.underline) style.textDecoration = 'underline';
+
     return (
       <span {...props.attributes} style={style}>
-        {children}
+        {props.children}
       </span>
     );
   }, []);
 
-  // 修改计算字数的函数
-  const calculateWordCount = useCallback((value: Descendant[]) => {
-    const text = value
-      .map(n => SlateNode.string(n))
-      .join('\n')
-      .trim();
-    
-    if (!text) return 0;
-    
-    // 分别计算中文和英文字数
-    const cjkCount = (text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g) || []).length;
-    const englishWords = text
-      .replace(/[\u4e00-\u9fff\u3400-\u4dbf]/g, '') // 移除中文字符
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean).length;
-    
-    // 中文字符算一个字，英文单词算一个字
-    return cjkCount + englishWords;
-  }, []);
-
-  // 修改导出函数，使filename参数可选
-  const handleExport = useCallback((format: 'txt' | 'md' | 'html', filename?: string) => {
+  // 导出功能
+  const handleExport = useCallback((format: 'txt' | 'md' | 'html') => {
     const text = value.map(n => SlateNode.string(n)).join('\n');
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    // 如果没有提供文件名，使用默认文件名
-    a.download = filename || `note.${format}`;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.download = `note-${timestamp}.${format}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [value]);
 
-  // 理快捷键
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (!event.ctrlKey) return;
-
-    switch (event.key) {
-      case 'b': {
-        event.preventDefault();
-        editor.addMark('bold', true);
-        break;
-      }
-      case 'i': {
-        event.preventDefault();
-        editor.addMark('italic', true);
-        break;
-      }
-      case 'u': {
-        event.preventDefault();
-        editor.addMark('underline', true);
-        break;
-      }
-      case 'z': {
-        event.preventDefault();
-        if (event.shiftKey) {
-          editor.redo();
-        } else {
-          editor.undo();
-        }
-        break;
-      }
-      case 'y': {
-        event.preventDefault();
-        editor.redo();
-        break;
-      }
-    }
-  }, [editor]);
-
-  // 添加主题切换处理
-  const handleThemeChange = useCallback((isDark: boolean) => {
-    onThemeChange?.(isDark);
-  }, [onThemeChange]);
+  // 自动保存钩子
+  useAutoSave(
+    currentNote?.id || null, 
+    value, 
+    2000, 
+    () => console.log('Note saved')
+  );
 
   return (
-    <div className="h-full flex flex-col dark:bg-gray-700 dark:text-gray-100">
-      <Slate
-        editor={editor}
-        value={value}
-        onChange={newValue => {
-          setValue(newValue);
-          const count = calculateWordCount(newValue);
-          setWordCount(count);
-        }}
+    <div className="h-full flex flex-col">
+      <Slate 
+        editor={editor} 
+        value={value} 
+        onChange={(newValue) => setValue(newValue as CustomElement[])}
       >
-        <div className="border-b flex items-center justify-between px-4 py-2 dark:border-gray-600">
-          <Toolbar 
-            onExport={handleExport} 
-            onThemeChange={handleThemeChange}
-          />
-          <div className="flex items-center gap-4">
-            {/* 保存状态指示器 */}
-            <div className="text-sm text-gray-500 flex items-center gap-1">
-              {saveStatus === 'saving' && (
-                <>
-                  <span className="material-icons animate-spin text-blue-500">sync</span>
-                  Saving...
-                </>
-              )}
-              {saveStatus === 'saved' && (
-                <>
-                  <span className="material-icons text-green-500">check</span>
-                  Saved
-                </>
-              )}
-              {saveStatus === 'error' && (
-                <>
-                  <span className="material-icons text-red-500">error</span>
-                  Error saving
-                </>
-              )}
-            </div>
-            {/* 字数统计 */}
-            <div className="text-sm text-gray-500">
-              {wordCount} {wordCount === 1 ? 'character' : 'characters'}
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 p-6 overflow-auto editor-content dark:bg-gray-700">
-          <Editable
-            className="h-full outline-none prose max-w-none dark:prose-invert"
-            renderElement={renderElement}
-            renderLeaf={renderLeaf}
-            placeholder="Start typing..."
-            onKeyDown={handleKeyDown}
-            spellCheck={false}
-          />
-        </div>
+        <Toolbar 
+          editor={editor}
+          onThemeChange={onThemeChange}
+          onToggleBlock={toggleBlock}
+          isBlockActive={isBlockActive}
+          onExport={handleExport}
+        />
+        <Editable 
+          renderElement={renderElement}
+          renderLeaf={renderLeaf}
+          placeholder="开始你的笔记..."
+          className="flex-1 p-4 overflow-auto prose max-w-none dark:prose-invert"
+        />
       </Slate>
     </div>
   );
 };
 
-export default NoteEditor; 
+export default NoteEditor;
