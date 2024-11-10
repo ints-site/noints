@@ -58,3 +58,7 @@ typenote/
    - Filter by tags
 
 
+# 下载基本的图标文件
+curl https://raw.githubusercontent.com/facebook/create-react-app/main/packages/cra-template/template/public/favicon.ico -o public/favicon.ico
+curl https://raw.githubusercontent.com/facebook/create-react-app/main/packages/cra-template/template/public/logo192.png -o public/logo192.png
+curl https://raw.githubusercontent.com/facebook/create-react-app/main/packages/cra-template/template/public/logo512.png -o public/logo512.png
