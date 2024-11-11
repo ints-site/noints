@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { Notebook, Section, Note } from '../types';
 import { Descendant } from 'slate';
 
@@ -15,6 +15,31 @@ const initialState: NotebookState = {
   currentSection: null,
   currentNote: null,
 };
+
+// Add validation helper
+const validateNote = (note: any): note is Note => {
+  return (
+    typeof note === 'object' &&
+    typeof note.id === 'string' &&
+    typeof note.title === 'string' &&
+    Array.isArray(note.content) &&
+    typeof note.sectionId === 'string'
+  );
+};
+
+// Add error handling for actions
+export const updateNoteContent = createAsyncThunk(
+  'notebooks/updateNoteContent',
+  async (payload: { id: string; content: any }, { rejectWithValue }) => {
+    try {
+      // Your existing update logic
+      return payload;
+    } catch (error) {
+      console.warn('Error updating note content:', error);
+      return rejectWithValue(null);
+    }
+  }
+);
 
 const notebookSlice = createSlice({
   name: 'notebooks',
@@ -44,10 +69,16 @@ const notebookSlice = createSlice({
       action: PayloadAction<{ id: string; content: Descendant[] }>
     ) => {
       const { id, content } = action.payload;
+      
+      if (!Array.isArray(content)) {
+        console.error('Invalid content format');
+        return;
+      }
+
       state.items.forEach((notebook: Notebook) => {
         notebook.sections.forEach((section: Section) => {
           const note = section.notes.find((n: Note) => n.id === id);
-          if (note) {
+          if (note && validateNote(note)) {
             note.content = content;
             note.updatedAt = new Date();
           }
@@ -136,6 +167,24 @@ const notebookSlice = createSlice({
         }
       });
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(updateNoteContent.fulfilled, (state, action) => {
+        try {
+          const { id, content } = action.payload;
+          const note = state.notes.find(n => n.id === id);
+          if (note) {
+            note.content = content;
+            note.updatedAt = new Date();
+          }
+        } catch (error) {
+          console.warn('Error in reducer:', error);
+        }
+      })
+      .addCase(updateNoteContent.rejected, (state, action) => {
+        console.warn('Note content update rejected');
+      });
   },
 });
 

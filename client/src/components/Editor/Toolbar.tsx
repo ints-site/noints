@@ -16,6 +16,7 @@ interface ToolbarProps {
   fontFamily: string;
   onFontSizeChange: (size: number) => void;
   onFontFamilyChange: (family: string) => void;
+  onInsertTable: (rows: number, cols: number) => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({ 
@@ -29,7 +30,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   fontSize,
   fontFamily,
   onFontSizeChange,
-  onFontFamilyChange
+  onFontFamilyChange,
+  onInsertTable,
 }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -172,6 +174,16 @@ const Toolbar: React.FC<ToolbarProps> = ({
           onFontSizeChange={onFontSizeChange}
           onFontFamilyChange={onFontFamilyChange}
         />
+      </div>
+
+      <div className="flex gap-1">
+        <button
+          onClick={() => onInsertTable(3, 3)}
+          className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+          title="Insert Table"
+        >
+          <span className="material-icons">table_chart</span>
+        </button>
       </div>
     </div>
   );

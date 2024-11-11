@@ -9,7 +9,15 @@
     "test": "cd client && npm test"
   },
   "dependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@types/prismjs": "^1.26.5",
     "@types/react-beautiful-dnd": "^13.1.8",
-    "react-beautiful-dnd": "^13.1.1"
+    "dompurify": "^3.2.0",
+    "prismjs": "^1.29.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "slate": "^0.110.2",
+    "slate-history": "^0.110.3",
+    "slate-react": "^0.111.0",
+    "zod": "^3.23.8"
   }
 }

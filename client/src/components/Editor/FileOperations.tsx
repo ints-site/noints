@@ -2,12 +2,27 @@ import React from 'react';
 import { Node } from 'slate';
 import { useDispatch } from 'react-redux';
 import { addNote } from '../../store/notebookSlice';
-import { CustomEditor, BlockFormatType } from './types';
+import { 
+  CustomEditor, 
+  BlockFormatType, 
+  CustomElement,
+  ParagraphElement 
+} from './types';
+import { z } from 'zod';
+import DOMPurify from 'dompurify';
 
 interface FileOperationsProps {
   editor: CustomEditor;
   currentSectionId?: string;
 }
+
+// Add validation schema
+const noteContentSchema = z.array(z.object({
+  type: z.string(),
+  children: z.array(z.object({
+    text: z.string()
+  }))
+}));
 
 export const FileOperations: React.FC<FileOperationsProps> = ({ 
   editor, 
@@ -16,53 +31,72 @@ export const FileOperations: React.FC<FileOperationsProps> = ({
   const dispatch = useDispatch();
 
   const handleNewFile = () => {
-    if (!currentSectionId) return;
+    if (!currentSectionId) {
+      console.error('No section selected');
+      return;
+    }
     
-    dispatch(addNote({
-      sectionId: currentSectionId,
-      note: {
-        id: Date.now().toString(),
-        title: 'New Note',
-        content: [{ type: 'paragraph', children: [{ text: '' }] }],
+    try {
+      const initialContent: ParagraphElement = {
+        type: 'paragraph',
+        children: [{ text: '' }]
+      };
+
+      dispatch(addNote({
         sectionId: currentSectionId,
-        tags: [],
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    }));
+        note: {
+          id: crypto.randomUUID(),
+          title: 'New Note',
+          content: [initialContent],
+          sectionId: currentSectionId,
+          tags: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      }));
+    } catch (error) {
+      console.error('Error creating new file:', error);
+    }
   };
 
-  const handleOpenFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleOpenFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = e.target.files?.[0];
+      if (!file || !currentSectionId) return;
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const text = e.target?.result;
-      if (typeof text === 'string') {
-        // 将文本内容转换为 Slate 格式
-        const content = text.split('\n').map(line => ({
-          type: 'paragraph' as BlockFormatType,
-          children: [{ text: line }]
-        }));
-        
-        if (currentSectionId) {
-          dispatch(addNote({
-            sectionId: currentSectionId,
-            note: {
-              id: Date.now().toString(),
-              title: file.name,
-              content,
-              sectionId: currentSectionId,
-              tags: [],
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          }));
-        }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File too large (max 5MB)');
+        return;
       }
-    };
-    reader.readAsText(file);
+
+      if (!['text/plain', 'text/markdown'].includes(file.type)) {
+        alert('Invalid file type (only .txt and .md supported)');
+        return;
+      }
+
+      const text = await file.text();
+      const sanitizedText = DOMPurify.sanitize(text);
+      const content = sanitizedText.split('\n').map(line => ({
+        type: 'paragraph',
+        children: [{ text: line }]
+      }));
+
+      dispatch(addNote({
+        sectionId: currentSectionId,
+        note: {
+          id: crypto.randomUUID(),
+          title: DOMPurify.sanitize(file.name),
+          content,
+          sectionId: currentSectionId,
+          tags: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      }));
+    } catch (error) {
+      console.error('Error opening file:', error);
+      alert('Failed to open file');
+    }
   };
 
   return (

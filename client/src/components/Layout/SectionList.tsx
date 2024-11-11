@@ -127,20 +127,26 @@ const SectionList: React.FC = () => {
   );
 
   const handleDragEnd = (event: DragEvent) => {
-    if (!event.destination || !currentNotebook) return;
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
 
-    const oldIndex = event.source.index;
-    const newIndex = event.destination.index;
+    try {
+      const oldIndex = sections.findIndex(s => s.id === active.id);
+      const newIndex = sections.findIndex(s => s.id === over.id);
 
-    if (oldIndex !== newIndex) {
-      const newSections = ensureSections(Array.from(currentNotebook.sections));
-      const [removed] = newSections.splice(oldIndex, 1);
-      newSections.splice(newIndex, 0, removed);
-
-      dispatch(reorderSections({
-        notebookId: currentNotebook.id,
-        sections: newSections
-      }));
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedSections = arrayMove(sections, oldIndex, newIndex);
+        
+        if (!currentNotebook) return;
+        
+        dispatch(reorderSections({
+          notebookId: currentNotebook.id,
+          sections: ensureSections(reorderedSections)
+        }));
+      }
+    } catch (error) {
+      console.error('Reordering error:', error);
     }
   };
 
