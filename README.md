@@ -1,63 +1,17 @@
-之后每次代码提交push到beta分支，然后从beta分支，之后完善版本后再提交到main
+# Text Editor
 
-
-# TypeNote - A Modern Note-Taking Application
-
-## Getting Started
-
-### Prerequisites
-- Node.js (v18.x)
-- npm (latest version)
-
-### Installation
-
-1. Clone the repository:
-
-## Project Structure
-
-```
-typenote/
-├── client/                 # Frontend
-│   └── src/
-│       ├── components/     # React components
-│       ├── styles/        # CSS/SCSS files
-│       ├── hooks/         # Custom React hooks
-│       ├── store/         # State management
-│       └── utils/         # Utility functions
-├── server/                # Backend
-│   └── src/
-│       ├── controllers/   # Route controllers
-│       ├── models/        # Data models
-│       ├── routes/        # API routes
-│       └── utils/         # Utility functions
-└── shared/                # Shared types/interfaces
-```
+This is a simple text editor project. It aims to provide basic text editing functionalities.
 
 ## Features
-1. Notebook Organization
-   - Notebooks and sections
-   - Hierarchical note structure
-   - Drag and drop organization
+- Open and save text files
+- Basic text editing (cut, copy, paste)
+- Syntax highlighting for common languages
 
-2. Rich Text Editing
-   - Text formatting (bold, italic, underline)
-   - Lists and tables
-   - Code blocks
-   - Headings and styles
+## Getting Started
+To get started with this project, follow these steps:
+1. Clone the repository
+2. Install the dependencies
+3. Run the application
 
-3. Real-time Saving
-   - Autosave functionality
-   - Version history
-   - Offline support
-
-4. File Attachments
-   - Image upload and display
-   - File attachments
-   - Drag and drop support
-
-5. Tags and Search
-   - Note tagging system
-   - Full-text search
-   - Filter by tags
-
-之后每次代码提交push到beta分支，然后从beta分支，之后完善版本后再提交到main
+## License
+This project is licensed under the GPL2 License - see the [LICENSE2](LICENSE) file for details.
