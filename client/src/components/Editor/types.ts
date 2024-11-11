@@ -6,18 +6,18 @@ export type BlockFormatType = 'numbered-list' | 'bulleted-list' | 'paragraph' | 
 export type MarkFormatType = 'bold' | 'italic' | 'underline' | 'backgroundColor';
 export type FormatType = BlockFormatType | MarkFormatType;
 
-export type CustomElement = {
+export interface CustomElement {
   type: BlockFormatType;
   children: CustomText[];
-};
+}
 
-export type CustomText = {
+export interface CustomText {
   text: string;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
   backgroundColor?: string;
-};
+}
 
 export type CustomEditor = BaseEditor & ReactEditor & HistoryEditor;
 
@@ -29,4 +29,34 @@ declare module 'slate' {
     Element: CustomElement;
     Text: CustomText;
   }
-} 
+}
+
+export interface KeyboardEvent {
+  preventDefault: () => void;
+}
+
+export interface ToolbarProps {
+  editor: CustomEditor;
+  onExport?: (format: 'txt' | 'md' | 'html') => void;
+  onThemeChange?: (isDark: boolean) => void;
+  onToggleBlock: (format: BlockFormatType) => void;
+  isBlockActive: (format: BlockFormatType) => boolean;
+  onFindReplace?: () => void;
+  currentSectionId?: string;
+  fontSize: number;
+  fontFamily: string;
+  onFontSizeChange: (size: number) => void;
+  onFontFamilyChange: (family: string) => void;
+}
+
+// 添加 Slate 元素的类型定义
+declare module 'slate' {
+  interface CustomTypes {
+    Editor: BaseEditor & ReactEditor & HistoryEditor;
+    Element: CustomElement;
+    Text: CustomText;
+  }
+}
+
+// 导出自定义的 Descendant 类型
+export type CustomDescendant = CustomElement | CustomText; 

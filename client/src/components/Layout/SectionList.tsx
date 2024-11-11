@@ -30,6 +30,7 @@ import {
   reorderSections,
   reorderNotes
 } from '../../store/notebookSlice';
+import { RootState } from '../../store/types';
 
 interface SortableItemProps {
   id: string;
@@ -93,12 +94,26 @@ const EditableItem: React.FC<{
   );
 };
 
+interface DragEvent extends DragEndEvent {
+  source: { index: number };
+  destination?: { index: number };
+}
+
+const ensureSections = (arr: any[]): Section[] => {
+  return arr.map(item => ({
+    id: item.id,
+    title: item.title,
+    notes: item.notes,
+    notebookId: item.notebookId
+  }));
+};
+
 const SectionList: React.FC = () => {
   const dispatch = useDispatch();
-  const currentNotebook = useSelector((state: any) => state.notebooks.currentNotebook);
-  const sections = useSelector((state: any) => 
+  const currentNotebook = useSelector((state: RootState) => state.notebooks.currentNotebook);
+  const sections = useSelector((state: RootState) => 
     state.notebooks.items
-      .find((nb: any) => nb.id === currentNotebook?.id)?.sections || []
+      .find(nb => nb.id === currentNotebook?.id)?.sections || []
   );
 
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
@@ -111,19 +126,20 @@ const SectionList: React.FC = () => {
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragEnd = (event: DragEvent) => {
+    if (!event.destination || !currentNotebook) return;
 
-    if (!over || active.id === over.id) return;
+    const oldIndex = event.source.index;
+    const newIndex = event.destination.index;
 
-    const oldIndex = sections.findIndex((section: Section) => section.id === active.id);
-    const newIndex = sections.findIndex((section: Section) => section.id === over.id);
+    if (oldIndex !== newIndex) {
+      const newSections = ensureSections(Array.from(currentNotebook.sections));
+      const [removed] = newSections.splice(oldIndex, 1);
+      newSections.splice(newIndex, 0, removed);
 
-    if (oldIndex !== -1 && newIndex !== -1) {
       dispatch(reorderSections({
         notebookId: currentNotebook.id,
-        startIndex: oldIndex,
-        endIndex: newIndex
+        sections: newSections
       }));
     }
   };
@@ -157,6 +173,21 @@ const SectionList: React.FC = () => {
 
     dispatch(addNote({ sectionId, note: newNote }));
   };
+
+  const handleDeleteNote = (noteId: string, sectionId: string) => {
+    dispatch(deleteNote({ 
+      noteId,
+      sectionId
+    }));
+  };
+
+  if (!currentNotebook) {
+    return (
+      <div className="h-full flex items-center justify-center text-gray-500">
+        Please select a notebook first
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -201,7 +232,12 @@ const SectionList: React.FC = () => {
                       </button>
                       <button
                         className="text-sm text-red-500 hover:text-red-600"
-                        onClick={() => dispatch(deleteSection({ notebookId: currentNotebook.id, sectionId: section.id }))}
+                        onClick={() => 
+                          dispatch(deleteSection({ 
+                            notebookId: currentNotebook.id, 
+                            sectionId: section.id 
+                          }))
+                        }
                       >
                         Delete
                       </button>
@@ -224,7 +260,7 @@ const SectionList: React.FC = () => {
                           className="text-sm text-red-500 hover:text-red-600 opacity-0 group-hover:opacity-100"
                           onClick={(e) => {
                             e.stopPropagation();
-                            dispatch(deleteNote({ noteId: note.id }));
+                            handleDeleteNote(note.id, section.id);
                           }}
                         >
                           Delete

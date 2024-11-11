@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { 
   createEditor, 
   Descendant, 
@@ -9,17 +9,28 @@ import {
 } from 'slate';
 import { Slate, Editable, withReact, RenderLeafProps } from 'slate-react';
 import { withHistory } from 'slate-history';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import Toolbar from './Toolbar';
 import { CustomElement, CustomText, BlockFormatType } from './types';
 import { RootState } from '../../store';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { findAndReplace } from '../../utils/textOperations';
+import { Node } from 'slate';
+import { updateNoteContent } from '../../store/notebookSlice';
 
 interface EditorProps {
   onThemeChange?: (isDark: boolean) => void;
 }
 
+// 添加类型定义
+interface KeyboardEvent {
+  preventDefault: () => void;
+}
+
 const NoteEditor: React.FC<EditorProps> = ({ onThemeChange }) => {
+  const dispatch = useDispatch();
+
   // 获取当前笔记
   const currentNote = useSelector((state: RootState) => state.notebooks.currentNote);
 
@@ -118,6 +129,50 @@ const NoteEditor: React.FC<EditorProps> = ({ onThemeChange }) => {
     () => console.log('Note saved')
   );
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [replaceText, setReplaceText] = useState('');
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
+  const [lineCount, setLineCount] = useState(0);
+
+  // Add hotkey support
+  useHotkeys('ctrl+f', (e: KeyboardEvent) => {
+    e.preventDefault();
+    setShowFindReplace(true);
+  });
+
+  useHotkeys('ctrl+s', (e: KeyboardEvent) => {
+    e.preventDefault();
+    handleSave();
+  });
+
+  // Add status bar calculations
+  useEffect(() => {
+    const text = value.map(n => Node.string(n)).join('\n');
+    setWordCount(text.trim().split(/\s+/).length);
+    setLineCount(value.length);
+  }, [value]);
+
+  // Add find and replace functionality
+  const handleFindReplace = () => {
+    findAndReplace(editor, searchQuery, replaceText);
+  };
+
+  const handleSave = useCallback(() => {
+    if (currentNote?.id) {
+      // 使用 useAutoSave 中的逻辑直接保存
+      dispatch(updateNoteContent({ 
+        id: currentNote.id, 
+        content: value 
+      }));
+      console.log('Note saved manually');
+    }
+  }, [currentNote?.id, value]);
+
+  // 添加新的状态
+  const [fontSize, setFontSize] = useState(16);
+  const [fontFamily, setFontFamily] = useState('Arial');
+
   return (
     <div className="h-full flex flex-col">
       <Slate 
@@ -131,13 +186,61 @@ const NoteEditor: React.FC<EditorProps> = ({ onThemeChange }) => {
           onToggleBlock={toggleBlock}
           isBlockActive={isBlockActive}
           onExport={handleExport}
+          onFindReplace={() => setShowFindReplace(true)}
+          fontSize={fontSize}
+          fontFamily={fontFamily}
+          onFontSizeChange={setFontSize}
+          onFontFamilyChange={setFontFamily}
+          currentSectionId={currentNote?.sectionId}
         />
+        {showFindReplace && (
+          <div className="border-b p-2 flex gap-2 items-center">
+            <input
+              type="text"
+              placeholder="Find..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="px-2 py-1 border rounded"
+            />
+            <input
+              type="text"
+              placeholder="Replace with..."
+              value={replaceText}
+              onChange={(e) => setReplaceText(e.target.value)}
+              className="px-2 py-1 border rounded"
+            />
+            <button
+              onClick={handleFindReplace}
+              className="px-3 py-1 bg-blue-500 text-white rounded"
+            >
+              Replace
+            </button>
+            <button
+              onClick={() => setShowFindReplace(false)}
+              className="px-2 py-1"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         <Editable 
           renderElement={renderElement}
           renderLeaf={renderLeaf}
           placeholder="开始你的笔记..."
           className="flex-1 p-4 overflow-auto prose max-w-none dark:prose-invert"
+          style={{
+            fontSize: `${fontSize}px`,
+            fontFamily
+          }}
         />
+        <div className="border-t px-4 py-2 text-sm text-gray-600 dark:text-gray-400 flex justify-between">
+          <div>
+            Lines: {lineCount} | Words: {wordCount}
+          </div>
+          <div>
+            UTF-8
+          </div>
+        </div>
       </Slate>
     </div>
   );
