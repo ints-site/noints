@@ -42,7 +42,7 @@ interface EditorProps {
 }
 
 // 添加类型定义
-interface KeyboardEvent {
+interface CustomKeyboardEvent {
   preventDefault: () => void;
 }
 
@@ -310,12 +310,12 @@ const NoteEditor: React.FC<EditorProps> = ({ onThemeChange }) => {
   const [lineCount, setLineCount] = useState(0);
 
   // Add hotkey support
-  useHotkeys('ctrl+f', (e: KeyboardEvent) => {
+  useHotkeys('ctrl+f', (e: CustomKeyboardEvent) => {
     e.preventDefault();
     setShowFindReplace(true);
   });
 
-  useHotkeys('ctrl+s', (e: KeyboardEvent) => {
+  useHotkeys('ctrl+s', (e: CustomKeyboardEvent) => {
     e.preventDefault();
     handleSave();
   });
@@ -400,17 +400,17 @@ const NoteEditor: React.FC<EditorProps> = ({ onThemeChange }) => {
   }, [currentNote]);
 
   // Add support for more keyboard shortcuts
-  useHotkeys('ctrl+b', (e: KeyboardEvent) => {
+  useHotkeys('ctrl+b', (e: CustomKeyboardEvent) => {
     e.preventDefault();
     Editor.addMark(editor, 'bold', true);
   });
 
-  useHotkeys('ctrl+i', (e: KeyboardEvent) => {
+  useHotkeys('ctrl+i', (e: CustomKeyboardEvent) => {
     e.preventDefault();
     Editor.addMark(editor, 'italic', true);
   });
 
-  useHotkeys('ctrl+u', (e: KeyboardEvent) => {
+  useHotkeys('ctrl+u', (e: CustomKeyboardEvent) => {
     e.preventDefault();
     Editor.addMark(editor, 'underline', true);
   });

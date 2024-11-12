@@ -93,7 +93,7 @@ declare module 'slate' {
   }
 }
 
-export interface KeyboardEvent {
+export interface CustomKeyboardEvent {
   preventDefault: () => void;
 }
 
